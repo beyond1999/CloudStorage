@@ -1,0 +1,66 @@
+syntax = "proto3";
+package titan.objstore.v1;
+option go_package = "titan/objstore/pkg/api/gen;gen";
+
+message Node {
+  string id = 1;
+  string address = 2; // host:port for ObjNodeService
+}
+
+message ChunkRef {
+  bytes  id = 1;  // content-addressed SHA256
+  uint32 index = 2; // 第几个分片
+  uint32 stripe = 3; // 第几个纠删条带
+}
+
+message Placement {
+  repeated Node data_nodes = 1;
+  repeated Node parity_nodes = 2;
+}
+
+message PutObjectRequest {
+  string bucket = 1;
+  string key = 2;
+  uint64 size = 3;
+  string content_type = 4;
+  string if_none_match = 5; // 简化：支持 If-None-Match: "*"
+}
+message PutObjectResponse {
+  string version = 1;
+}
+
+message CommitObjectRequest {
+  string bucket = 1;
+  string key = 2;
+  string upload_id = 3;
+  repeated ChunkRef chunks = 4;
+}
+message CommitObjectResponse { string version = 1; }
+
+message AllocatePlacementRequest {
+  uint32 k = 1; // data shards
+  uint32 m = 2; // parity shards
+}
+message AllocatePlacementResponse { Placement placement = 1; }
+
+service MetaService {
+  rpc AllocatePlacement(AllocatePlacementRequest) returns (AllocatePlacementResponse);
+  rpc PutObject(PutObjectRequest) returns (PutObjectResponse);
+  rpc CommitObject(CommitObjectRequest) returns (CommitObjectResponse);
+}
+
+message PutChunkRequest {
+  bytes chunk_id = 1;
+  uint32 index = 2;
+  bytes data = 3;
+  bytes checksum = 4; // sha256 of data
+}
+message PutChunkResponse {}
+
+message GetChunkRequest { bytes chunk_id = 1; uint32 index = 2; }
+message GetChunkResponse { bytes data = 1; }
+
+service ObjNodeService {
+  rpc PutChunk(PutChunkRequest) returns (PutChunkResponse);
+  rpc GetChunk(GetChunkRequest) returns (GetChunkResponse);
+}
