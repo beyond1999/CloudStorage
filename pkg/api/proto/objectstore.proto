@@ -1,6 +1,6 @@
 syntax = "proto3";
-package titan.objstore.v1;
-option go_package = "titan/objstore/pkg/api/gen;gen";
+package CloudStorage.v1;
+option go_package = "CloudStorage/pkg/api/gen;gen";
 
 message Node {
   string id = 1;
